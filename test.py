@@ -1,6 +1,7 @@
 from scrap_tiktok import query_tiktok, get_top_authors, extract_influencer_info
 from product_to_query import product_description_to_query
 from render_db import fetch_data
+from influencerOutreach.email_function import send_simple_message
 import streamlit as st
 import psycopg2
 from urllib.parse import urlparse
@@ -100,6 +101,62 @@ with tab2:
                         # Display the data as a table
                         st.dataframe(df, use_container_width=True)
                         st.success(f"Successfully fetched {len(results)} records from the database!")
+                        
+                        # Create a dropdown for selecting influencers
+                        st.subheader("Send Email to Influencer")
+                        
+                        # Extract names and emails for dropdown
+                        influencer_options = []
+                        for i, row in df.iterrows():
+                            if 'profile_name' in df.columns and 'email' in df.columns:
+                                if pd.notna(row['email']):
+                                    # Format: "Name (email@example.com)"
+                                    option = f"{row['profile_name']} ({row['email']})"
+                                    influencer_options.append((option, i, row['email'], row['profile_name']))
+                        
+                        if influencer_options:
+                            # Extract the display strings for the selectbox
+                            display_options = [opt[0] for opt in influencer_options]
+                            
+                            # Create the dropdown
+                            selected_option_idx = st.selectbox(
+                                "Select an influencer to email:",
+                                range(len(display_options)),
+                                format_func=lambda i: display_options[i]
+                            )
+                            
+                            # Get the selected influencer's info
+                            _, row_idx, email, name = influencer_options[selected_option_idx]
+                            selected_row = df.iloc[row_idx]
+                            
+                            # Email fields without a form
+                            email_subject = st.text_input(
+                                "Email Subject:", 
+                                value=f"Partnership Opportunity with {name}"
+                            )
+                            
+                            email_message = st.text_area(
+                                "Email Message:", 
+                                value=f"Hi {name},\n\nWe'd like to discuss a potential partnership opportunity with you.\n\nBest regards,\nLeadFetch Team", 
+                                height=200
+                            )
+                            
+                            # Add a dedicated send button
+                            if st.button("📧 Send Email", key="send_email_button", type="primary"):
+                                with st.spinner("Sending email..."):
+                                    # Send email using the imported function with all parameters
+                                    response = send_simple_message(
+                                        message=email_message,
+                                        recipient=email,
+                                        subject=email_subject
+                                    )
+                                    
+                                    if response and response.status_code == 200:
+                                        st.success(f"✅ Email sent successfully to {email}!")
+                                    else:
+                                        st.error("❌ Failed to send email. Please check your Mailgun API key and configuration.")
+                        else:
+                            st.warning("No influencers with email addresses found in the database.")
                     else:
                         st.info("No records found in the database.")
                 except Exception as e:
