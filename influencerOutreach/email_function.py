@@ -37,7 +37,7 @@ def send_simple_message(message: str, recipient: Optional[str] = None, subject: 
         return None
         
     # Use provided values or defaults
-    to_email = recipient or DEFAULT_RECIPIENT
+    to_email = DEFAULT_RECIPIENT
     email_subject = subject or DEFAULT_SUBJECT
     sender = from_email or DEFAULT_FROM_EMAIL
     

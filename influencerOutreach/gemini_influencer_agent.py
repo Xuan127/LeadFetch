@@ -402,49 +402,7 @@ class GeminiInfluencerAgent:
                 find_influencers,
                 analyze_email_response,
                 draft_response_email,
-                # Remove the instance method from direct tools list
-                # self.send_influencer_email
-            ]
-        )
-
-        # Create a wrapper function for send_influencer_email
-        def send_email_tool(influencer_name: str, email: str, subject: str, body: str, email_type: str = "follow_up") -> str:
-            """
-            Send an email to an influencer and track the result.
-            
-            Args:
-                influencer_name: Name of the influencer
-                email: Email address of the influencer
-                subject: Subject line for the email
-                body: Content of the email
-                email_type: Type of email (default: follow_up)
-                
-            Returns:
-                JSON string with email send status
-            """
-            # Create a simplified data structure
-            influencer_data = {
-                "influencer_name": influencer_name,
-                "email": email,
-                "subject": subject,
-                "body": body
-            }
-            
-            result = self.send_influencer_email(
-                influencer_data=influencer_data,
-                email_type=email_type
-            )
-            
-            return json.dumps(result)
-        
-        # Replace complex tools with simplified versions
-        self.model = genai.GenerativeModel(
-            MODEL_NAME,
-            tools=[
-                find_influencers,
-                analyze_email_response,
-                draft_response_email,
-                send_email_tool
+                self.send_email_tool  # Use the class method
             ]
         )
         self.chat = self.model.start_chat()
@@ -770,6 +728,35 @@ The Partnership Team at {self.client_company['name']}
         
         return {"result": email_result, "tracking": email_tracking}
 
+    def send_email_tool(self, influencer_name: str, email: str, subject: str, body: str, email_type: str = "follow_up") -> str:
+        """
+        Send an email to an influencer and track the result.
+        
+        Args:
+            influencer_name: Name of the influencer
+            email: Email address of the influencer
+            subject: Subject line for the email
+            body: Content of the email
+            email_type: Type of email (default: follow_up)
+            
+        Returns:
+            JSON string with email send status
+        """
+        # Create a simplified data structure
+        influencer_data = {
+            "influencer_name": influencer_name,
+            "email": email,
+            "subject": subject,
+            "body": body
+        }
+        
+        result = self.send_influencer_email(
+            influencer_data=influencer_data,
+            email_type=email_type
+        )
+        
+        return json.dumps(result)
+
     def manage_influencer_campaign(self, brief: Dict[str, Any]) -> Dict[str, Any]:
         """
         Let the agent decide the overall strategy and necessary actions for the campaign.
@@ -851,7 +838,7 @@ The Partnership Team at {self.client_company['name']}
                     except TypeError:
                         args_str = str(args_dict)
                     
-                    logging.info(f"With arguments: {args_str}")
+                    logging.info(f"With arguments: {function_call.args}")
                     
                     # Process the function call and get results
                     logging.info(f"⚙️ Processing function call...")
@@ -921,7 +908,7 @@ The Partnership Team at {self.client_company['name']}
                     
                     elif function_name == "send_email_tool":
                         # Handle the simplified email tool
-                        raw_result = send_email_tool(**function_call.args)
+                        raw_result = self.send_email_tool(**function_call.args)
                         result_data = json.loads(raw_result)
                         influencer_name = args_dict.get("influencer_name", "unknown")
                         result_summary = f"Sent email to {influencer_name} with subject: {args_dict.get('subject', 'No subject')}"
