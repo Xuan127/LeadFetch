@@ -432,7 +432,7 @@ class GeminiInfluencerAgent:
         # Create function calling config to force use of the specific function
         from google.generativeai.types import content_types
         tool_config = content_types.to_tool_config(
-            {"function_calling_config": {"mode": "auto", "allowed_function_names": [function_name]}}
+            {"function_calling_config": {"mode": "any", "allowed_function_names": [function_name]}}
         )
         
         # Call the model with the prompt and tool config
