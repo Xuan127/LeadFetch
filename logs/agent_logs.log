@@ -1,0 +1,199 @@
+2025-03-22 13:08:55,754 [INFO] Logging initialized. Logs will be saved to: logs/agent_logs.log
+2025-03-22 13:08:55,860 [INFO] 
+=== Starting Influencer Campaign for FitLife Products ===
+2025-03-22 13:08:55,860 [INFO] Campaign Brief: {
+  "goals": [
+    "brand awareness",
+    "product sales"
+  ],
+  "preferred_niche": "fitness",
+  "min_followers": 100000,
+  "min_engagement_rate": 3.0,
+  "product_focus": "supplements",
+  "target_audience": "health enthusiasts aged 25-40",
+  "budget": 25000
+}
+2025-03-22 13:08:55,860 [INFO] 
+🔧 Setting up tool configuration for agent decision-making
+2025-03-22 13:08:55,860 [INFO] 
+🤖 Starting agent conversation loop
+2025-03-22 13:08:55,860 [INFO] 
+▶️ Turn 1: Sending prompt to agent
+2025-03-22 13:08:55,860 [INFO] Prompt: 
+        You are a marketing assistant helping to run an influencer marketing campaign for FitLife Products, 
+        a company in the fitness industry.
+        
+        Campaign brief:
+        - Goals: brand awareness, product sales
+        - Target audience: health enthusiasts aged 25-40
+        - Budget: $25000
+        - Product focus: supplements
+        
+        Based on this information, determine what actions to take. You can:
+        - Find influencers that match our requirements
+        - Check for email responses from influencers
+        - Analyze influencer responses
+        - Draft email responses
+        - Get campaign performance data
+        
+        What would you like to do first?
+        
+2025-03-22 13:08:57,453 [INFO] ✅ Received response from agent
+2025-03-22 13:08:57,454 [INFO] 
+🔍 Agent decided to call function: find_influencers
+2025-03-22 13:08:57,454 [INFO] With arguments: {
+  "niche": "fitness",
+  "min_followers": 10000.0,
+  "min_engagement_rate": 5.0
+}
+2025-03-22 13:08:57,455 [INFO] ⚙️ Processing function call...
+2025-03-22 13:08:57,455 [INFO] 📊 Result summary: Found 4 matching influencers
+2025-03-22 13:08:57,455 [INFO] 📝 Recorded action #1 in results
+2025-03-22 13:08:57,455 [INFO] 📊 Updating potential influencers list
+2025-03-22 13:08:57,455 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:08:58,560 [INFO] 
+▶️ Turn 2: Sending prompt to agent
+2025-03-22 13:08:58,560 [INFO] Prompt: What should we do next?
+2025-03-22 13:08:59,379 [INFO] ✅ Received response from agent
+2025-03-22 13:08:59,380 [INFO] 
+🔍 Agent decided to call function: draft_response_email
+2025-03-22 13:08:59,381 [INFO] With arguments: {
+  "sentiment": "positive",
+  "influencer_niche": "fitness",
+  "influencer_name": "Influencer 1",
+  "key_points": [
+    "interested in collaboration",
+    "positive sentiment"
+  ]
+}
+2025-03-22 13:08:59,381 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:01,410 [INFO] 📊 Result summary: Drafted email with subject: RE: Partnership Discussion - FitLife Products
+2025-03-22 13:09:01,410 [INFO] 📝 Recorded action #2 in results
+2025-03-22 13:09:01,410 [INFO] ✉️ Added Influencer 1 to contacted influencers
+2025-03-22 13:09:01,410 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:02,360 [INFO] 
+▶️ Turn 3: Sending prompt to agent
+2025-03-22 13:09:02,361 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:03,446 [INFO] ✅ Received response from agent
+2025-03-22 13:09:03,447 [INFO] 
+🔍 Agent decided to call function: analyze_email_response
+2025-03-22 13:09:03,447 [INFO] With arguments: {
+  "email_body": "I am very interested in collaborating on this campaign. Your products look great and I think my audience will love them.  Let's discuss specifics."
+}
+2025-03-22 13:09:03,447 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:04,419 [INFO] 📊 Result summary: Analysis: positive sentiment with 0 key points
+2025-03-22 13:09:04,419 [INFO] 📝 Recorded action #3 in results
+2025-03-22 13:09:04,419 [INFO] 📨 Added response analysis to processed responses
+2025-03-22 13:09:04,420 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:05,411 [INFO] 
+▶️ Turn 4: Sending prompt to agent
+2025-03-22 13:09:05,411 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:06,063 [INFO] ✅ Received response from agent
+2025-03-22 13:09:06,063 [INFO] 
+🔍 Agent decided to call function: get_campaign_performance
+2025-03-22 13:09:06,063 [INFO] With arguments: {
+  "influencer_id": 1.0
+}
+2025-03-22 13:09:06,063 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:06,063 [INFO] 📊 Result summary: Retrieved performance data for 2 campaigns
+2025-03-22 13:09:06,063 [INFO] 📝 Recorded action #4 in results
+2025-03-22 13:09:06,063 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:07,332 [INFO] 
+▶️ Turn 5: Sending prompt to agent
+2025-03-22 13:09:07,332 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:08,271 [INFO] ✅ Received response from agent
+2025-03-22 13:09:08,271 [INFO] 
+🔍 Agent decided to call function: draft_response_email
+2025-03-22 13:09:08,271 [INFO] With arguments: {
+  "sentiment": "positive",
+  "influencer_niche": "fitness",
+  "influencer_name": "Influencer 2",
+  "key_points": [
+    "interested in a long-term partnership",
+    "wants to know more about the products"
+  ]
+}
+2025-03-22 13:09:08,271 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:10,869 [INFO] 📊 Result summary: Drafted email with subject: RE: Partnership Discussion - FitLife Products
+2025-03-22 13:09:10,869 [INFO] 📝 Recorded action #5 in results
+2025-03-22 13:09:10,869 [INFO] ✉️ Added Influencer 2 to contacted influencers
+2025-03-22 13:09:10,870 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:11,937 [INFO] 
+▶️ Turn 6: Sending prompt to agent
+2025-03-22 13:09:11,937 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:12,744 [INFO] ✅ Received response from agent
+2025-03-22 13:09:12,744 [INFO] 
+🔍 Agent decided to call function: analyze_email_response
+2025-03-22 13:09:12,744 [INFO] With arguments: {
+  "email_body": "I'm very interested in partnering with FitLife Products.  My audience would love your supplements. Please send over more details about the campaign."
+}
+2025-03-22 13:09:12,744 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:13,611 [INFO] 📊 Result summary: Analysis: positive sentiment with 0 key points
+2025-03-22 13:09:13,611 [INFO] 📝 Recorded action #6 in results
+2025-03-22 13:09:13,611 [INFO] 📨 Added response analysis to processed responses
+2025-03-22 13:09:13,611 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:15,689 [INFO] 
+▶️ Turn 7: Sending prompt to agent
+2025-03-22 13:09:15,689 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:16,618 [INFO] ✅ Received response from agent
+2025-03-22 13:09:16,618 [INFO] 
+🔍 Agent decided to call function: find_influencers
+2025-03-22 13:09:16,618 [INFO] With arguments: {
+  "niche": "fitness",
+  "min_followers": 15000.0,
+  "min_engagement_rate": 8.0
+}
+2025-03-22 13:09:16,618 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:16,618 [INFO] 📊 Result summary: Found 4 matching influencers
+2025-03-22 13:09:16,618 [INFO] 📝 Recorded action #7 in results
+2025-03-22 13:09:16,618 [INFO] 📊 Updating potential influencers list
+2025-03-22 13:09:16,618 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:18,663 [INFO] 
+▶️ Turn 8: Sending prompt to agent
+2025-03-22 13:09:18,664 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:19,619 [INFO] ✅ Received response from agent
+2025-03-22 13:09:19,620 [INFO] 
+🔍 Agent decided to call function: analyze_email_response
+2025-03-22 13:09:19,620 [INFO] With arguments: {
+  "email_body": "Thanks for reaching out! I love FitLife Products and my audience is a perfect fit.  Let me know the details of your campaign and the budget."
+}
+2025-03-22 13:09:19,620 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:20,564 [INFO] 📊 Result summary: Analysis: neutral sentiment with 1 key points
+2025-03-22 13:09:20,564 [INFO] 📝 Recorded action #8 in results
+2025-03-22 13:09:20,564 [INFO] 📨 Added response analysis to processed responses
+2025-03-22 13:09:20,564 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:23,095 [INFO] 
+▶️ Turn 9: Sending prompt to agent
+2025-03-22 13:09:23,095 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:24,096 [INFO] ✅ Received response from agent
+2025-03-22 13:09:24,098 [INFO] 
+🔍 Agent decided to call function: get_campaign_performance
+2025-03-22 13:09:24,100 [INFO] With arguments: {
+  "influencer_id": 2.0
+}
+2025-03-22 13:09:24,100 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:24,100 [INFO] 📊 Result summary: Retrieved performance data for 2 campaigns
+2025-03-22 13:09:24,100 [INFO] 📝 Recorded action #9 in results
+2025-03-22 13:09:24,100 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:25,852 [INFO] 
+▶️ Turn 10: Sending prompt to agent
+2025-03-22 13:09:25,852 [INFO] Prompt: What should we do next?
+2025-03-22 13:09:27,141 [INFO] ✅ Received response from agent
+2025-03-22 13:09:27,141 [INFO] 
+🔍 Agent decided to call function: draft_response_email
+2025-03-22 13:09:27,142 [INFO] With arguments: {
+  "sentiment": "neutral",
+  "influencer_niche": "fitness",
+  "influencer_name": "Influencer 3",
+  "key_points": [
+    "budget is a concern",
+    "interested in product samples"
+  ]
+}
+2025-03-22 13:09:27,142 [INFO] ⚙️ Processing function call...
+2025-03-22 13:09:29,445 [INFO] 📊 Result summary: Drafted email with subject: RE: Partnership Discussion - FitLife Products
+2025-03-22 13:09:29,445 [INFO] 📝 Recorded action #10 in results
+2025-03-22 13:09:29,445 [INFO] ✉️ Added Influencer 3 to contacted influencers
+2025-03-22 13:09:29,445 [INFO] 🔄 Sending result back to agent
+2025-03-22 13:09:31,551 [INFO] 
+🏁 Agent conversation completed after 10 actions
