@@ -303,7 +303,7 @@ def draft_response_email(influencer_name: str, influencer_niche: str, sentiment:
     - Sentiment of their previous email: {sentiment}
     - Key points they mentioned: {key_points}
     
-    The email should be from the partnerships team at FitLife Products, a fitness company.
+    The email should be from the partnerships team at ElevenLabs, an AI audio technology company.
     It should address each of the key points mentioned by the influencer.
     
     Format your response as a JSON object with these keys: subject, body.
@@ -323,10 +323,10 @@ def draft_response_email(influencer_name: str, influencer_niche: str, sentiment:
         email_content = json.loads(response.text)
     except json.JSONDecodeError:
         # If parsing fails, create a basic template response
-        subject = "RE: Partnership Discussion - FitLife Products"
+        subject = "RE: Partnership Discussion - ElevenLabs TTS Engine"
         
         # Start with greeting
-        body = f"Hello {influencer_name},\n\nThank you for your response regarding a potential partnership with FitLife Products.\n\n"
+        body = f"Hello {influencer_name},\n\nThank you for your response regarding a potential partnership with ElevenLabs.\n\n"
         
         # Add personalized content based on sentiment and key points
         if sentiment == "positive":
@@ -344,7 +344,7 @@ def draft_response_email(influencer_name: str, influencer_niche: str, sentiment:
             body += "We would love to set up a call to discuss this partnership further. How does next Tuesday or Wednesday at 2:00 PM EST work for your schedule?\n\n"
         
         # Closing
-        body += "Looking forward to potentially working together and creating some amazing content for your audience.\n\nBest regards,\nAI Assistant\nPartnerships Team\nFitLife Products"
+        body += "Looking forward to potentially working together and creating some amazing content for your audience.\n\nBest regards,\nAI Assistant\nPartnerships Team\nElevenLabs"
         
         email_content = {"subject": subject, "body": body}
     
