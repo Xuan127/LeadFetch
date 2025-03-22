@@ -73,7 +73,6 @@ def extract_influencer_info(data):
                 'videos': videos,
                 'platform': 'tiktok',
                 'email': profile_name + '@gmail.com',
-                'contract_vid': '',
                 'lead_stage': 'prospect'
             })
         except Exception as e:

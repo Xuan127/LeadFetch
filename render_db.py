@@ -175,6 +175,49 @@ def clear_table(connection, table_name, confirm=False):
         print(f"Error clearing table {table_name}: {error}")
         connection.rollback()
 
+def update_data(connection, table_name, data, condition):
+    """
+    Updates data in the specified PostgreSQL table based on a condition.
+
+    Parameters:
+    - connection: psycopg2 connection object to the database.
+    - table_name (str): Name of the table to update.
+    - data (dict): A dictionary where keys are column names and values are the data to update.
+    - condition (str): SQL condition for identifying which row(s) to update.
+
+    Example:
+    update_data(conn, 'employees', {'department': 'Marketing', 'salary': 65000}, "id = 5")
+    """
+    if not data:
+        print("No data provided for update.")
+        return
+
+    # Prepare the SET part of the query
+    set_items = []
+    values = []
+    
+    for column, value in data.items():
+        set_items.append(sql.SQL("{} = %s").format(sql.Identifier(column)))
+        values.append(value)
+    
+    update_query = sql.SQL("UPDATE {table} SET {set_items} WHERE {condition}").format(
+        table=sql.Identifier(table_name),
+        set_items=sql.SQL(", ").join(set_items),
+        condition=sql.SQL(condition)
+    )
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(update_query, values)
+            row_count = cursor.rowcount
+            connection.commit()
+            print(f"Updated {row_count} row(s) in {table_name} table.")
+            return row_count
+    except Exception as error:
+        print(f"Error updating data in {table_name}: {error}")
+        connection.rollback()
+        return 0
+
 # Example usage:
 if __name__ == "__main__":
     result = urlparse(os.getenv("DATABASE_URL"))
@@ -201,9 +244,15 @@ if __name__ == "__main__":
         #     'profile_name': 'VARCHAR(255) NOT NULL',
         #     'fans': 'INTEGER',
         #     'hearts': 'INTEGER',
+        #     'videos': 'INTEGER',
+        #     'platform': 'VARCHAR(50)',
         #     'email': 'VARCHAR(255)',
-        #     'contract_vid': 'VARCHAR(255)',
-        #     'lead_stage': 'VARCHAR(50)'
+        #     'lead_stage': 'VARCHAR(50)',
+        #     'contract_vid': 'VARCHAR(255) NULL',
+        #     'created_at': 'TIMESTAMP NULL',
+        #     'contract_shares': 'INTEGER NULL',
+        #     'contract_plays': 'INTEGER NULL',
+        #     'contract_comments': 'INTEGER NULL'
         # })
 
         # insert_data(conn, 'leads', {
@@ -215,7 +264,7 @@ if __name__ == "__main__":
         #     'lead_stage': 'prospect'
         # })
 
-        print(fetch_data(conn, 'leads'))
+        # print(fetch_data(conn, 'leads'))
 
     except Exception as e:
         print(f"Database connection error: {e}")
