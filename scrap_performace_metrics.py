@@ -41,3 +41,5 @@ def scrap_performance(vid_url):
     shares = vid["shareCount"]
     plays = vid["playCount"]
     comments = vid["commentCount"]
+
+    return created_time, shares, plays, comments
