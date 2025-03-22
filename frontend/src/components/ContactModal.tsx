@@ -1,16 +1,37 @@
 import React, { useState } from 'react';
 import { XIcon } from 'lucide-react';
-const ContactModal = ({
+import { influencersApi, Influencer } from '../services/api';
+
+interface ContactModalProps {
+  influencer: Influencer;
+  onClose: () => void;
+}
+
+const ContactModal: React.FC<ContactModalProps> = ({
   influencer,
   onClose
 }) => {
   const [message, setMessage] = useState(`Hi ${influencer.name},\n\nI'm reaching out because I think you'd be a great fit for our upcoming campaign. We're looking for influencers in the ${influencer.niche} space, and your content really resonates with our brand vision.\n\nWould you be interested in discussing a potential collaboration?\n\nLooking forward to your response,\n[Your Name]`);
-  const handleSend = () => {
-    // In a real app, this would send the message
-    setTimeout(() => {
+  const [sending, setSending] = useState(false);
+  
+  const handleSend = async () => {
+    try {
+      setSending(true);
+      // Send message to the API
+      await influencersApi.contact({ 
+        influencerId: influencer.id,
+        message: message
+      });
+      
+      // Show success and close modal
+      alert('Message sent successfully!');
       onClose();
-      // Show success notification
-    }, 1000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
   return <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
@@ -18,7 +39,12 @@ const ContactModal = ({
           <h3 className="text-lg font-medium text-gray-900">
             Contact {influencer.name}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+          <button 
+            onClick={onClose} 
+            className="text-gray-400 hover:text-gray-500"
+            title="Close dialog" 
+            aria-label="Close dialog"
+          >
             <XIcon className="w-5 h-5" />
           </button>
         </div>

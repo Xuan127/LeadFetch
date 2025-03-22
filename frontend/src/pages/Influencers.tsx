@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SearchIcon, FilterIcon, InstagramIcon, YoutubeIcon, TwitterIcon } from 'lucide-react';
 import ContactModal from '../components/ContactModal';
-// Mock data for influencers
+import { influencersApi, Influencer as InfluencerType } from '../services/api';
+
+// Keep mock data as fallback
 const mockInfluencers = [{
   id: 1,
   name: 'Sarah Johnson',
@@ -63,9 +65,16 @@ const mockInfluencers = [{
   platform: 'twitter',
   location: 'Seattle, WA'
 }];
-const Influencers = ({
+interface InfluencersProps {
+  currentBrief?: any; // Using 'any' temporarily, should be replaced with proper type
+}
+
+const Influencers: React.FC<InfluencersProps> = ({
   currentBrief
 }) => {
+  const [influencers, setInfluencers] = useState<InfluencerType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     platform: 'all',
@@ -74,11 +83,33 @@ const Influencers = ({
     location: ''
   });
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedInfluencer, setSelectedInfluencer] = useState(null);
-  const handleSearch = e => {
+  const [selectedInfluencer, setSelectedInfluencer] = useState<InfluencerType | null>(null);
+  
+  // Fetch influencers from API
+  useEffect(() => {
+    const fetchInfluencers = async () => {
+      try {
+        setLoading(true);
+        const data = await influencersApi.getAll();
+        setInfluencers(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching influencers:', err);
+        setError('Failed to load influencers. Using mock data instead.');
+        setInfluencers(mockInfluencers as unknown as InfluencerType[]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchInfluencers();
+  }, []);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
-  const handleFilterChange = e => {
+  
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const {
       name,
       value
@@ -88,36 +119,56 @@ const Influencers = ({
       [name]: value
     }));
   };
-  const filteredInfluencers = mockInfluencers.filter(influencer => {
+  
+  // Use displayed influencers (API or mock)
+  const displayedInfluencers = influencers.length > 0 ? influencers : mockInfluencers as unknown as InfluencerType[];
+  
+  const filteredInfluencers = displayedInfluencers.filter(influencer => {
     // Search filter
-    if (searchTerm && !influencer.name.toLowerCase().includes(searchTerm.toLowerCase()) && !influencer.username.toLowerCase().includes(searchTerm.toLowerCase()) && !influencer.niche.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
+    if (searchTerm) {
+      const nameLower = influencer.name.toLowerCase();
+      const usernameLower = influencer.username?.toLowerCase() || '';
+      const nicheLower = influencer.niche?.toLowerCase() || '';
+      
+      if (!nameLower.includes(searchTerm.toLowerCase()) && 
+          !usernameLower.includes(searchTerm.toLowerCase()) && 
+          !nicheLower.includes(searchTerm.toLowerCase())) {
+        return false;
+      }
     }
+    
     // Platform filter
     if (filters.platform !== 'all' && influencer.platform !== filters.platform) {
       return false;
     }
+    
     // Followers filter
-    if (filters.minFollowers) {
-      const followerCount = parseFloat(influencer.followers) * (influencer.followers.includes('M') ? 1000000 : 1000);
+    if (filters.minFollowers && influencer.followers) {
+      const followersStr = String(influencer.followers);
+      const followerCount = parseFloat(followersStr) * (followersStr.includes('M') ? 1000000 : 1000);
       if (followerCount < parseFloat(filters.minFollowers) * 1000) {
         return false;
       }
     }
+    
     // Engagement filter
-    if (filters.minEngagement) {
-      const engagementRate = parseFloat(influencer.engagementRate);
+    if (filters.minEngagement && influencer.engagementRate) {
+      const engagementRate = parseFloat(String(influencer.engagementRate));
       if (engagementRate < parseFloat(filters.minEngagement)) {
         return false;
       }
     }
+    
     // Location filter
-    if (filters.location && !influencer.location.toLowerCase().includes(filters.location.toLowerCase())) {
-      return false;
+    if (filters.location && influencer.location) {
+      if (!influencer.location.toLowerCase().includes(filters.location.toLowerCase())) {
+        return false;
+      }
     }
+    
     return true;
   });
-  const getPlatformIcon = platform => {
+  const getPlatformIcon = (platform: string): React.ReactNode => {
     switch (platform) {
       case 'instagram':
         return <InstagramIcon className="w-5 h-5 text-pink-600" />;
@@ -156,7 +207,7 @@ const Influencers = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Platform
                 </label>
-                <select name="platform" value={filters.platform} onChange={handleFilterChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select name="platform" title="Filter by platform" value={filters.platform} onChange={handleFilterChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="all">All Platforms</option>
                   <option value="instagram">Instagram</option>
                   <option value="youtube">YouTube</option>

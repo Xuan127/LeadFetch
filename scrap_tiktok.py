@@ -15,7 +15,7 @@ def query_tiktok(query):
     # Prepare the Actor input
     run_input = {
         "excludePinnedPosts": False,
-        "resultsPerPage": 100,
+        "resultsPerPage": 20,
         "searchQueries": [
             query
         ],
@@ -46,8 +46,8 @@ def extract_influencer_info(data):
     for profile in data:
         profile_name = profile["authorMeta"]['name']
         fans = profile["authorMeta"]['fans']
-        hearts = profile["authorMeta"]['hearts']
-        videos = profile["authorMeta"]['videos']
+        hearts = profile["authorMeta"]['heart']
+        videos = profile["authorMeta"]['video']
 
         result = urlparse(os.getenv("DATABASE_URL"))
         username = result.username

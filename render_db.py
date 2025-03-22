@@ -264,7 +264,7 @@ if __name__ == "__main__":
         #     'lead_stage': 'prospect'
         # })
 
-        # print(fetch_data(conn, 'leads'))
+        print(fetch_data(conn, 'leads'))
 
     except Exception as e:
         print(f"Database connection error: {e}")
