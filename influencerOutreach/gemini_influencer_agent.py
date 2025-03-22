@@ -12,67 +12,27 @@ import logging
 import os
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
+import sys
+
+# Add the parent directory to sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import Google Generative AI library
 import google.generativeai as genai
-import os
 from dotenv import load_dotenv
+
+# Import utility functions
+from influencerOutreach.utils import setup_logging, convert_to_serializable
+# Import the email function
+from influencerOutreach.email_function import send_simple_message
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Set up logging
-def setup_logging(log_file='agent_logs.log'):
-    """
-    Set up logging to both console and file
-    
-    Args:
-        log_file: Path to the log file
-    """
-    # Create logs directory if it doesn't exist
-    logs_dir = 'logs'
-    if not os.path.exists(logs_dir):
-        os.makedirs(logs_dir)
-    
-    log_path = os.path.join(logs_dir, log_file)
-    
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        handlers=[
-            logging.FileHandler(log_path),
-            logging.StreamHandler()
-        ]
-    )
-    logging.info(f"Logging initialized. Logs will be saved to: {log_path}")
-    return log_path
-
 # Call setup_logging to initialize
 log_file_path = setup_logging()
 
-# Add this utility function after imports, before the mock functions
-def convert_to_serializable(obj):
-    """
-    Convert Google Generative AI response objects to JSON-serializable Python types.
-    Handles MapComposite, RepeatedComposite, and other non-serializable types.
-    
-    Args:
-        obj: Any object, potentially containing non-serializable types
-        
-    Returns:
-        JSON-serializable version of the object
-    """
-    # Handle dictionaries and dict-like objects
-    if hasattr(obj, "items"):
-        return {k: convert_to_serializable(v) for k, v in obj.items()}
-    
-    # Handle lists, tuples and other iterables (except strings)
-    elif isinstance(obj, (list, tuple)) or (hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes, dict))):
-        return [convert_to_serializable(item) for item in obj]
-    
-    # Return primitive types as is
-    return obj
+MODEL_NAME = "gemini-2.0-flash"
 
 # Mock functions for database and email operations
 def mock_query_database(query: str) -> List[Dict[str, Any]]:
@@ -155,27 +115,6 @@ def mock_query_database(query: str) -> List[Dict[str, Any]]:
             }
         ]
     
-    # Mock data for campaign performance
-    elif "campaign_performance" in query.lower():
-        return [
-            {
-                "campaign_id": 101,
-                "influencer_id": 1,
-                "engagement": 4500,
-                "clicks": 1200,
-                "conversions": 85,
-                "roi": 3.2
-            },
-            {
-                "campaign_id": 102,
-                "influencer_id": 3,
-                "engagement": 7800,
-                "clicks": 2100,
-                "conversions": 130,
-                "roi": 2.8
-            }
-        ]
-    
     # Default empty response
     return []
 
@@ -234,6 +173,39 @@ def mock_send_email(to: str, subject: str, body: str) -> Dict[str, Any]:
         "message_id": f"msg_{int(time.time())}",
         "recipient": to,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    }
+
+def send_email(to: str, subject: str, body: str) -> Dict[str, Any]:
+    """
+    Send an email using the email_function module.
+    
+    Args:
+        to: Recipient email address
+        subject: Email subject
+        body: Email body content
+        
+    Returns:
+        Dictionary with email send status
+    """
+    logging.info(f"\nSending email to: {to}")
+    logging.info(f"Subject: {subject}")
+    logging.info(f"Body: {body}")
+    
+    # Use the improved send_simple_message function with all parameters
+    response = send_simple_message(
+        message=body,
+        recipient=to,
+        subject=subject
+    )
+    
+    # Return a standardized response format
+    status_code = getattr(response, 'status_code', None)
+    return {
+        "status": "sent" if response and status_code == 200 else "failed",
+        "message_id": f"msg_{int(time.time())}",
+        "recipient": to,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "response_code": status_code
     }
 
 # Define the tools (functions) that will be available to the Gemini model
@@ -322,7 +294,7 @@ def draft_response_email(influencer_name: str, influencer_niche: str, sentiment:
         JSON string with draft email subject and body
     """
     # Use Gemini to generate the email
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel(MODEL_NAME)
     
     prompt = """
     Draft a professional response email to an influencer with the following details:
@@ -378,21 +350,6 @@ def draft_response_email(influencer_name: str, influencer_niche: str, sentiment:
     
     return json.dumps(email_content)
 
-def get_campaign_performance(influencer_id: int) -> str:
-    """
-    Get performance metrics for previous campaigns with an influencer.
-    
-    Args:
-        influencer_id: ID of the influencer
-        
-    Returns:
-        JSON string with campaign performance data
-    """
-    # For now, we'll still use the mock database function since we don't have a real database
-    query = f"SELECT * FROM campaign_performance WHERE influencer_id = {influencer_id}"
-    results = mock_query_database(query)
-    return json.dumps(results)
-
 class GeminiInfluencerAgent:
     """
     Agent that uses Google's Gemini API to intelligently identify and contact
@@ -404,7 +361,7 @@ class GeminiInfluencerAgent:
         client_company_id: int,
         database_query_function: Callable = mock_query_database,
         email_check_function: Callable = mock_check_emails,
-        email_send_function: Callable = mock_send_email,
+        email_send_function: Callable = send_email,  # Changed to use real email function
         api_key: Optional[str] = None
     ):
         """
@@ -440,12 +397,54 @@ class GeminiInfluencerAgent:
             
         # Initialize the model with tools
         self.model = genai.GenerativeModel(
-            "gemini-1.5-flash",
+            MODEL_NAME,
             tools=[
                 find_influencers,
                 analyze_email_response,
                 draft_response_email,
-                get_campaign_performance
+                # Remove the instance method from direct tools list
+                # self.send_influencer_email
+            ]
+        )
+
+        # Create a wrapper function for send_influencer_email
+        def send_email_tool(influencer_name: str, email: str, subject: str, body: str, email_type: str = "follow_up") -> str:
+            """
+            Send an email to an influencer and track the result.
+            
+            Args:
+                influencer_name: Name of the influencer
+                email: Email address of the influencer
+                subject: Subject line for the email
+                body: Content of the email
+                email_type: Type of email (default: follow_up)
+                
+            Returns:
+                JSON string with email send status
+            """
+            # Create a simplified data structure
+            influencer_data = {
+                "influencer_name": influencer_name,
+                "email": email,
+                "subject": subject,
+                "body": body
+            }
+            
+            result = self.send_influencer_email(
+                influencer_data=influencer_data,
+                email_type=email_type
+            )
+            
+            return json.dumps(result)
+        
+        # Replace complex tools with simplified versions
+        self.model = genai.GenerativeModel(
+            MODEL_NAME,
+            tools=[
+                find_influencers,
+                analyze_email_response,
+                draft_response_email,
+                send_email_tool
             ]
         )
         self.chat = self.model.start_chat()
@@ -484,11 +483,13 @@ class GeminiInfluencerAgent:
         logging.info(f"Function: {function_name}")
         logging.info(f"Arguments: {json.dumps(function_args, indent=2)}")
         
-        # Create function calling config to force use of the specific function
+        # Create a more flexible tool config that allows the model to choose any function
         from google.generativeai.types import content_types
-        tool_config = content_types.to_tool_config(
-            {"function_calling_config": {"mode": "any", "allowed_function_names": [function_name]}}
-        )
+        tool_config = content_types.to_tool_config({
+            "function_calling_config": {
+                "mode": "any"
+            }
+        })
         
         # Call the model with the prompt and tool config
         response = self.chat.send_message(prompt, tool_config=tool_config)
@@ -506,8 +507,6 @@ class GeminiInfluencerAgent:
                     result = analyze_email_response(**args_dict)
                 elif function_name == "draft_response_email":
                     result = draft_response_email(**args_dict)
-                elif function_name == "get_campaign_performance":
-                    result = get_campaign_performance(**args_dict)
                 else:
                     result = json.dumps({"error": "Unknown function"})
                 
@@ -526,8 +525,6 @@ class GeminiInfluencerAgent:
             result = analyze_email_response(**args_dict)
         elif function_name == "draft_response_email":
             result = draft_response_email(**args_dict)
-        elif function_name == "get_campaign_performance":
-            result = get_campaign_performance(**args_dict)
         else:
             result = json.dumps({"error": "Unknown function"})
             
@@ -634,31 +631,145 @@ class GeminiInfluencerAgent:
         
         return result
     
-    def get_influencer_performance_history(self, influencer_id: int) -> List[Dict[str, Any]]:
+    def _create_initial_outreach_email(self, influencer: Dict[str, Any], brief: Dict[str, Any]) -> Dict[str, str]:
         """
-        Use Gemini to get and interpret an influencer's past campaign performance.
+        Create an initial outreach email for an influencer.
         
         Args:
-            influencer_id: ID of the influencer
+            influencer: Dictionary containing influencer data
+            brief: Dictionary with campaign requirements
             
         Returns:
-            List of campaign performance data with insights
+            Dictionary with email subject and body
         """
-        prompt = f"""
-        Get performance data for previous campaigns with influencer ID {influencer_id}.
-        Analyze the ROI and engagement metrics.
-        """
+        # Get influencer name, handling both formats
+        influencer_name = influencer.get("influencer_name", influencer.get("name", "Influencer"))
+        # Get influencer niche if available
+        influencer_niche = influencer.get("niche", "content")
         
-        # Prepare function arguments
-        function_args = {
-            "influencer_id": influencer_id
-        }
-        
-        # Call the function and parse results
-        result = self._call_gemini_function(prompt, "get_campaign_performance", function_args)
-        
-        return result
+        subject = f"Partnership Opportunity with {self.client_company['name']}"
+        body = f"""Hello {influencer_name},
+
+We're {self.client_company['name']}, a company in the {self.client_company['industry']} industry, and we're impressed with your content in the {influencer_niche} niche.
+
+We'd like to discuss a potential partnership for our upcoming campaign focused on {brief.get('product_focus', self.client_company['product_types'][0])}.
+
+Our target audience aligns well with your followers, and we believe a collaboration would be mutually beneficial.
+
+Would you be interested in discussing this opportunity further?
+
+Best regards,
+The Partnership Team at {self.client_company['name']}
+"""
+        return {"subject": subject, "body": body}
     
+    def _find_influencer_email(self, influencer_name: str, actions_taken: List[Dict[str, Any]]) -> Optional[str]:
+        """
+        Find an influencer's email address from previous actions.
+        
+        Args:
+            influencer_name: Name of the influencer
+            actions_taken: List of previous actions taken
+            
+        Returns:
+            Email address if found, None otherwise
+        """
+        for action in actions_taken:
+            if action["function"] == "find_influencers":
+                for influencer in action["result_data"]:
+                    if influencer["name"] == influencer_name:
+                        return influencer["email"]
+        return None
+    
+    def send_influencer_email(self, influencer_data: Dict[str, Any], email_type: str, brief: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Send an email to an influencer and track the result.
+        
+        Args:
+            influencer_data: Dictionary with influencer data and/or email details
+            email_type: Type of email (initial_outreach or follow_up)
+            brief: Dictionary with campaign requirements (for initial outreach)
+            
+        Returns:
+            Dictionary with email send status and tracking info
+        """
+        # Handle different email types
+        if email_type == "initial_outreach":
+            # For initial outreach, generate the email content
+            influencer_name = influencer_data["name"]
+            email_content = self._create_initial_outreach_email(influencer_data, brief)
+            to_email = influencer_data["email"]
+            
+            # Send the email
+            email_result = self.send_email(
+                to=to_email,
+                subject=email_content["subject"],
+                body=email_content["body"]
+            )
+            
+            # Add influencer to contacted set
+            self.contacted_influencers.add(influencer_name)
+            
+            # Prepare result for tracking
+            email_tracking = {
+                "influencer_id": influencer_data.get("id"),
+                "influencer_name": influencer_name,
+                "email": to_email,
+                "subject": email_content["subject"],
+                "type": email_type,
+                "status": email_result.get("status", "unknown"),
+                "timestamp": email_result.get("timestamp")
+            }
+            
+            logging.info(f"📧 Sent outreach email to {influencer_name} ({to_email})")
+            
+        elif email_type == "follow_up":
+            # For follow-up, the email content is provided in the influencer_data
+            influencer_name = influencer_data.get("influencer_name", "")
+            subject = influencer_data.get("subject", "")
+            body = influencer_data.get("body", "")
+            to_email = influencer_data.get("email", "")
+            
+            if to_email:
+                # Send the email
+                email_result = self.send_email(
+                    to=to_email,
+                    subject=subject,
+                    body=body
+                )
+                
+                # Prepare result for tracking
+                email_tracking = {
+                    "influencer_name": influencer_name,
+                    "email": to_email,
+                    "subject": subject,
+                    "type": email_type,
+                    "status": email_result.get("status", "unknown"),
+                    "timestamp": email_result.get("timestamp")
+                }
+                
+                logging.info(f"📧 Sent follow-up email to {influencer_name} ({to_email})")
+            else:
+                # If email not provided, attempt was unsuccessful
+                logging.warning(f"⚠️ No email address for {influencer_name}, email not sent")
+                email_result = {"status": "failed", "reason": "No email address found"}
+                email_tracking = {
+                    "influencer_name": influencer_name,
+                    "type": email_type,
+                    "status": "failed",
+                    "reason": "No email address found"
+                }
+        else:
+            # Unsupported email type
+            email_result = {"status": "failed", "reason": f"Unsupported email type: {email_type}"}
+            email_tracking = {
+                "type": email_type,
+                "status": "failed",
+                "reason": f"Unsupported email type: {email_type}"
+            }
+        
+        return {"result": email_result, "tracking": email_tracking}
+
     def manage_influencer_campaign(self, brief: Dict[str, Any]) -> Dict[str, Any]:
         """
         Let the agent decide the overall strategy and necessary actions for the campaign.
@@ -688,7 +799,6 @@ class GeminiInfluencerAgent:
         - Check for email responses from influencers
         - Analyze influencer responses
         - Draft email responses
-        - Get campaign performance data
         
         What would you like to do first?
         """
@@ -696,9 +806,11 @@ class GeminiInfluencerAgent:
         logging.info("\n🔧 Setting up tool configuration for agent decision-making")
         # Create a more flexible tool config that allows the model to choose any function
         from google.generativeai.types import content_types
-        tool_config = content_types.to_tool_config(
-            {"function_calling_config": {"mode": "any"}}
-        )
+        tool_config = content_types.to_tool_config({
+            "function_calling_config": {
+                "mode": "any"
+            }
+        })
         
         # Start a conversation and let the model decide the flow
         results = {
@@ -706,19 +818,21 @@ class GeminiInfluencerAgent:
             "campaign_brief": brief,
             "actions_taken": [],
             "influencers_contacted": [],
-            "responses_processed": []
+            "responses_processed": [],
+            "emails_sent": []  # Field to track emails sent
         }
         
         logging.info("\n🤖 Starting agent conversation loop")
         # Let the agent drive the conversation and take actions for a few turns
         chat = self.model.start_chat(history=[])
-        for turn in range(10):  # Limit to 10 turns to avoid infinite loops
+        for turn in range(15):  # Limit to 10 turns to avoid infinite loops
             logging.info(f"\n▶️ Turn {turn+1}: Sending prompt to agent")
             current_prompt = prompt if turn == 0 else "What should we do next?"
             logging.info(f"Prompt: {current_prompt}")
             
             response = chat.send_message(current_prompt, tool_config=tool_config)
             logging.info(f"✅ Received response from agent")
+            logging.info(f"Response: {response}")
             
             # Extract function calls from the response
             if hasattr(response, 'parts') and len(response.parts) > 0:
@@ -744,21 +858,78 @@ class GeminiInfluencerAgent:
                     
                     # Implement the actual function call
                     if function_name == "find_influencers":
-                        raw_result = find_influencers(**args_dict)
+                        raw_result = find_influencers(**function_call.args)
                         result_data = json.loads(raw_result)
                         result_summary = f"Found {len(result_data)} matching influencers"
+                        
+                        # Automatically send initial outreach emails to found influencers
+                        if len(result_data) > 0 and turn < 2:  # Only do this in early turns
+                            logging.info(f"✉️ Automatically sending outreach emails to {len(result_data)} influencers")
+                            for influencer in result_data:
+                                # Skip if already contacted
+                                if influencer['name'] in self.contacted_influencers:
+                                    continue
+                                    
+                                # Send the email and track results
+                                email_operation = self.send_influencer_email(
+                                    influencer_data=influencer,
+                                    email_type="initial_outreach",
+                                    brief=brief
+                                )
+                                
+                                # Add to results tracking
+                                results["emails_sent"].append(email_operation["tracking"])
+                                
                     elif function_name == "analyze_email_response":
-                        raw_result = analyze_email_response(**args_dict)
+                        raw_result = analyze_email_response(**function_call.args)
                         result_data = json.loads(raw_result)
                         result_summary = f"Analysis: {result_data['sentiment']} sentiment with {len(result_data['key_points'])} key points"
                     elif function_name == "draft_response_email":
-                        raw_result = draft_response_email(**args_dict)
+                        raw_result = draft_response_email(**function_call.args)
                         result_data = json.loads(raw_result)
                         result_summary = f"Drafted email with subject: {result_data['subject']}"
-                    elif function_name == "get_campaign_performance":
-                        raw_result = get_campaign_performance(**args_dict)
+                        
+                        # Actually send the drafted email if it's a valid response
+                        if 'subject' in result_data and 'body' in result_data:
+                            # Get influencer name from arguments
+                            recipient_name = args_dict.get("influencer_name", "")
+                            
+                            # Find the influencer's email
+                            recipient_email = self._find_influencer_email(recipient_name, results["actions_taken"])
+                            
+                            if recipient_email:
+                                # Prepare data for sending email
+                                email_data = {
+                                    "influencer_name": recipient_name,
+                                    "email": recipient_email,
+                                    "subject": result_data['subject'],
+                                    "body": result_data['body']
+                                }
+                                
+                                # Send the email and track results
+                                email_operation = self.send_influencer_email(
+                                    influencer_data=email_data,
+                                    email_type="follow_up"
+                                )
+                                
+                                # Add to results tracking
+                                results["emails_sent"].append(email_operation["tracking"])
+                                
+                                result_summary += f" and sent to {recipient_email}"
+                            else:
+                                logging.warning(f"⚠️ Could not find email address for {recipient_name}, email not sent")
+                    
+                    elif function_name == "send_email_tool":
+                        # Handle the simplified email tool
+                        raw_result = send_email_tool(**function_call.args)
                         result_data = json.loads(raw_result)
-                        result_summary = f"Retrieved performance data for {len(result_data)} campaigns"
+                        influencer_name = args_dict.get("influencer_name", "unknown")
+                        result_summary = f"Sent email to {influencer_name} with subject: {args_dict.get('subject', 'No subject')}"
+                        
+                        # Add to email tracking if not already added by the function
+                        if "tracking" in result_data:
+                            results["emails_sent"].append(result_data["tracking"])
+                                
                     else:
                         result_summary = f"Unknown function: {function_name}"
                         result_data = {"error": "Unknown function"}
@@ -806,6 +977,7 @@ class GeminiInfluencerAgent:
                 break
         
         logging.info(f"\n🏁 Agent conversation completed after {len(results['actions_taken'])} actions")
+        logging.info(f"Total emails sent: {len(results['emails_sent'])}")
         return results
 
 
@@ -817,11 +989,11 @@ if __name__ == "__main__":
     # Define a test campaign brief
     test_brief = {
         "goals": ["brand awareness", "product sales"],
-        "preferred_niche": "fitness",
+        "preferred_niche": "TTS engine for developers to develop voice assistants",
         "min_followers": 100000,
         "min_engagement_rate": 3.0,
-        "product_focus": "supplements",
-        "target_audience": "health enthusiasts aged 25-40",
+        "product_focus": "ElevenLabs TTS engine",
+        "target_audience": "developers",
         "budget": 25000
     }
     
