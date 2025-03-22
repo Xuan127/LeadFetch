@@ -146,6 +146,35 @@ def delete_table(connection, table_name, confirm=False):
         print(f"Error deleting table {table_name}: {error}")
         connection.rollback()
 
+def clear_table(connection, table_name, confirm=False):
+    """
+    Clears all rows from a table without deleting the table structure.
+
+    Parameters:
+    - connection: psycopg2 connection object to the database.
+    - table_name (str): Name of the table to clear.
+    - confirm (bool): Safety parameter that must be set to True to confirm clearing.
+
+    Example:
+    clear_table(conn, 'employees', confirm=True)
+    """
+    if not confirm:
+        print(f"Table clearing not confirmed. Set confirm=True to clear all data from {table_name}.")
+        return
+
+    clear_query = sql.SQL("TRUNCATE TABLE {table}").format(
+        table=sql.Identifier(table_name)
+    )
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(clear_query)
+            connection.commit()
+            print(f"Table {table_name} cleared successfully.")
+    except Exception as error:
+        print(f"Error clearing table {table_name}: {error}")
+        connection.rollback()
+
 # Example usage:
 if __name__ == "__main__":
     result = urlparse(os.getenv("DATABASE_URL"))
@@ -165,20 +194,28 @@ if __name__ == "__main__":
         database=database
         )
 
+        # delete_table(conn, 'leads', confirm=True)
+
         # create_table(conn, 'leads', {
         #     'id': 'SERIAL PRIMARY KEY',
         #     'profile_name': 'VARCHAR(255) NOT NULL',
         #     'fans': 'INTEGER',
         #     'hearts': 'INTEGER',
+        #     'email': 'VARCHAR(255)',
+        #     'contract_vid': 'VARCHAR(255)',
         #     'lead_stage': 'VARCHAR(50)'
         # })
 
-        insert_data(conn, 'leads', {
-            'profile_name': 'test_user',
-            'fans': 1000,
-            'hearts': 500,
-            'lead_stage': 'prospect'
-        })
+        # insert_data(conn, 'leads', {
+        #     'profile_name': 'test_user',
+        #     'fans': 1000,
+        #     'hearts': 500,
+        #     'email': 'test@domain.com',
+        #     'contract_vid': 'test_url',
+        #     'lead_stage': 'prospect'
+        # })
+
+        print(fetch_data(conn, 'leads'))
 
     except Exception as e:
         print(f"Database connection error: {e}")
