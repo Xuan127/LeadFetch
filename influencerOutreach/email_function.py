@@ -49,6 +49,7 @@ def send_simple_message(message: str, recipient: Optional[str] = None, subject: 
     }
     
     logger.info(f"Sending email with following payload: {data}")
+    breakpoint()
     
     try:
         response = requests.post(

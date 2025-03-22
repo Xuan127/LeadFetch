@@ -361,7 +361,7 @@ class GeminiInfluencerAgent:
         client_company_id: int,
         database_query_function: Callable = mock_query_database,
         email_check_function: Callable = mock_check_emails,
-        email_send_function: Callable = send_email,  # Changed to use real email function
+        email_send_function: Callable = send_email, 
         api_key: Optional[str] = None
     ):
         """
@@ -812,7 +812,7 @@ The Partnership Team at {self.client_company['name']}
         logging.info("\n🤖 Starting agent conversation loop")
         # Let the agent drive the conversation and take actions for a few turns
         chat = self.model.start_chat(history=[])
-        for turn in range(15):  # Limit to 10 turns to avoid infinite loops
+        for turn in range(5):  # Limit to 10 turns to avoid infinite loops
             logging.info(f"\n▶️ Turn {turn+1}: Sending prompt to agent")
             current_prompt = prompt if turn == 0 else "What should we do next?"
             logging.info(f"Prompt: {current_prompt}")
