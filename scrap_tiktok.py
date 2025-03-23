@@ -43,12 +43,26 @@ def get_top_authors(data, top_k):
     return [item for item in sorted_data[:top_k]]
 
 def extract_influencer_info(data):
+    influencer_data = []
     for profile in data:
         profile_name = profile["authorMeta"]['name']
         fans = profile["authorMeta"]['fans']
         hearts = profile["authorMeta"]['heart']
         videos = profile["authorMeta"]['video']
-
+        
+        # Prepare influencer record for dataframe display
+        influencer_record = {
+            'profile_name': profile_name,
+            'fans': fans,
+            'hearts': hearts,
+            'videos': videos,
+            'platform': 'tiktok',
+            'email': profile_name + '@gmail.com',
+            'lead_stage': 'prospect'
+        }
+        influencer_data.append(influencer_record)
+        
+        # Also save to database
         result = urlparse(os.getenv("DATABASE_URL"))
         username = result.username
         password = result.password
@@ -66,20 +80,15 @@ def extract_influencer_info(data):
             database=database
             )
 
-            insert_data(conn, 'leads', {
-                'profile_name': profile_name,
-                'fans': fans,
-                'hearts': hearts,
-                'videos': videos,
-                'platform': 'tiktok',
-                'email': profile_name + '@gmail.com',
-                'lead_stage': 'prospect'
-            })
+            insert_data(conn, 'leads', influencer_record)
         except Exception as e:
             print(f"Database connection error: {e}")
         finally:
             if conn:
                 conn.close()
+                
+    # Return data for display
+    return influencer_data
 
 
 if __name__ == "__main__":

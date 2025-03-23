@@ -13,7 +13,7 @@ from influencerOutreach.utils import setup_logging, convert_to_serializable
 log_file_path = setup_logging()
 logger = logging.getLogger(__name__)
 
-MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY', '')
+MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY')
 DEFAULT_RECIPIENT = "Zhang Yifan Jem <zhangjem321@gmail.com>"
 DEFAULT_SUBJECT = "Message from LeadFetch Influencer Agent"
 DEFAULT_FROM_EMAIL = "Mailgun Sandbox <postmaster@sandbox405609ba02c346768e9e41e94625d494.mailgun.org>"
@@ -34,12 +34,13 @@ def send_simple_message(message: str, recipient: Optional[str] = None, subject: 
     """
     if (MAILGUN_API_KEY == ''):
         logger.error("MAILGUN_API_KEY is not set")
+        print("MAILGUN_API_KEY is not set")
         return None
         
     # Use provided values or defaults
     to_email = DEFAULT_RECIPIENT
-    email_subject = subject or DEFAULT_SUBJECT
-    sender = from_email or DEFAULT_FROM_EMAIL
+    email_subject = DEFAULT_SUBJECT
+    sender = DEFAULT_FROM_EMAIL
     
     data = {
         "from": sender,
@@ -47,7 +48,7 @@ def send_simple_message(message: str, recipient: Optional[str] = None, subject: 
         "subject": email_subject,
         "text": message
     }
-    
+    print(data)
     logger.info(f"Sending email with following payload: {data}")
     
     try:
