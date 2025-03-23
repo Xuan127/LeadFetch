@@ -12,6 +12,13 @@ import pandas as pd
 # Load environment variables
 load_dotenv()
 
+# Initialize session state for email sending
+if 'email_sent' not in st.session_state:
+    st.session_state.email_sent = False
+    st.session_state.email_success = False
+    st.session_state.email_recipient = ""
+    st.session_state.email_error = ""
+
 # Function to establish database connection
 def get_db_connection():
     try:
@@ -32,6 +39,27 @@ def get_db_connection():
     except Exception as e:
         st.error(f"Database connection error: {e}")
         return None
+
+# Function to send email without refreshing the page
+def send_email_callback():
+    recipient = st.session_state.selected_email
+    subject = st.session_state.email_subject
+    message = st.session_state.email_message
+    
+    response = send_simple_message(
+        message=message,
+        recipient=recipient,
+        subject=subject
+    )
+    
+    st.session_state.email_sent = True
+    st.session_state.email_recipient = recipient
+    
+    if response and response.status_code == 200:
+        st.session_state.email_success = True
+    else:
+        st.session_state.email_success = False
+        st.session_state.email_error = "Failed to send email. Check your Mailgun API key and configuration."
 
 # Set page title
 st.title("TikTok Influencer Finder")
@@ -78,6 +106,26 @@ with tab1:
 with tab2:
     st.subheader("Database Records")
     
+    # Display email sent notification if exists
+    if st.session_state.email_sent:
+        if st.session_state.email_success:
+            st.success(f"✅ Email sent successfully to {st.session_state.email_recipient}!")
+        else:
+            st.error(st.session_state.email_error)
+        
+        # Add button to dismiss notification
+        if st.button("Clear notification"):
+            st.session_state.email_sent = False
+    
+    # Initialize session state for dataframe if it doesn't exist
+    if 'df' not in st.session_state:
+        st.session_state.df = None
+        st.session_state.has_data = False
+    
+    # Display dataframe if it exists
+    if st.session_state.has_data and st.session_state.df is not None:
+        st.dataframe(st.session_state.df, use_container_width=True)
+    
     # Button to refresh data
     if st.button("Fetch Records"):
         with st.spinner("Fetching data from database..."):
@@ -98,70 +146,75 @@ with tab2:
                         # Create a pandas DataFrame with the results
                         df = pd.DataFrame(results, columns=columns)
                         
-                        # Display the data as a table
-                        st.dataframe(df, use_container_width=True)
+                        # Store the dataframe in session state for later use
+                        st.session_state.df = df
+                        st.session_state.has_data = True
+                        
+                        # Display the data as a table - no need for rerun as we'll display below
                         st.success(f"Successfully fetched {len(results)} records from the database!")
-                        
-                        # Create a dropdown for selecting influencers
-                        st.subheader("Send Email to Influencer")
-                        
-                        # Extract names and emails for dropdown
-                        influencer_options = []
-                        for i, row in df.iterrows():
-                            if 'profile_name' in df.columns and 'email' in df.columns:
-                                if pd.notna(row['email']):
-                                    # Format: "Name (email@example.com)"
-                                    option = f"{row['profile_name']} ({row['email']})"
-                                    influencer_options.append((option, i, row['email'], row['profile_name']))
-                        
-                        if influencer_options:
-                            # Extract the display strings for the selectbox
-                            display_options = [opt[0] for opt in influencer_options]
-                            
-                            # Create the dropdown
-                            selected_option_idx = st.selectbox(
-                                "Select an influencer to email:",
-                                range(len(display_options)),
-                                format_func=lambda i: display_options[i]
-                            )
-                            
-                            # Get the selected influencer's info
-                            _, row_idx, email, name = influencer_options[selected_option_idx]
-                            selected_row = df.iloc[row_idx]
-                            
-                            # Email fields without a form
-                            email_subject = st.text_input(
-                                "Email Subject:", 
-                                value=f"Partnership Opportunity with {name}"
-                            )
-                            
-                            email_message = st.text_area(
-                                "Email Message:", 
-                                value=f"Hi {name},\n\nWe'd like to discuss a potential partnership opportunity with you.\n\nBest regards,\nLeadFetch Team", 
-                                height=200
-                            )
-                            
-                            # Add a dedicated send button
-                            if st.button("📧 Send Email", key="send_email_button", type="primary"):
-                                with st.spinner("Sending email..."):
-                                    # Send email using the imported function with all parameters
-                                    response = send_simple_message(
-                                        message=email_message,
-                                        recipient=email,
-                                        subject=email_subject
-                                    )
-                                    
-                                    if response and response.status_code == 200:
-                                        st.success(f"✅ Email sent successfully to {email}!")
-                                    else:
-                                        st.error("❌ Failed to send email. Please check your Mailgun API key and configuration.")
-                        else:
-                            st.warning("No influencers with email addresses found in the database.")
+                        # Immediately display the dataframe
+                        st.dataframe(df, use_container_width=True)
                     else:
                         st.info("No records found in the database.")
+                        st.session_state.has_data = False
                 except Exception as e:
                     st.error(f"Error fetching data: {e}")
+                    st.session_state.has_data = False
                 finally:
                     conn.close()
             else:
                 st.error("Failed to connect to the database. Check your DATABASE_URL environment variable.")
+    
+    # Only show email options if we have data
+    if st.session_state.has_data and st.session_state.df is not None:
+        df = st.session_state.df
+        
+        # Create a dropdown for selecting influencers
+        st.subheader("Send Email to Influencer")
+        
+        # Extract names and emails for dropdown
+        influencer_options = []
+        for i, row in df.iterrows():
+            if 'profile_name' in df.columns and 'email' in df.columns:
+                if pd.notna(row['email']):
+                    # Format: "Name (email@example.com)"
+                    option = f"{row['profile_name']} ({row['email']})"
+                    influencer_options.append((option, i, row['email'], row['profile_name']))
+        
+        if influencer_options:
+            # Extract the display strings for the selectbox
+            display_options = [opt[0] for opt in influencer_options]
+            
+            # Create the dropdown
+            selected_option_idx = st.selectbox(
+                "Select an influencer to email:",
+                range(len(display_options)),
+                format_func=lambda i: display_options[i]
+            )
+            
+            # Get the selected influencer's info
+            _, row_idx, email, name = influencer_options[selected_option_idx]
+            selected_row = df.iloc[row_idx]
+            
+            # Store the email in session state
+            st.session_state.selected_email = email
+            
+            # Email fields with keys for session state
+            st.text_input(
+                "Email Subject:", 
+                value=f"Partnership Opportunity with {name}",
+                key="email_subject"
+            )
+            
+            st.text_area(
+                "Email Message:", 
+                value=f"Hi {name},\n\nWe'd like to discuss a potential partnership opportunity with you.\n\nBest regards,\nLeadFetch Team", 
+                height=200,
+                key="email_message"
+            )
+            
+            # Send button with callback
+            st.button("📧 Send Email", on_click=send_email_callback, type="primary")
+            
+        else:
+            st.warning("No influencers with email addresses found in the database.")
